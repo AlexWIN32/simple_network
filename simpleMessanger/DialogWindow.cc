@@ -51,12 +51,7 @@ void OptionsDialog::apply()
     Network::ConnectionHandler<Network::ClientConnection> handler(*testConn);
 
     Network::Packet nameQueryPacket(QRY_NAME_CHECK);
-    //AAA old variable
-    //Network::Packet::Variable userNameVar;
-    //userNameVar.Init<std::string, StringParser>(Network::VAR_TYPE_STRING, nameLine->text().toStdString());
-    //nameQueryPacket.AddVariable(VAR_USER_NAME, userNameVar);
     nameQueryPacket.CreateVariable(VAR_USER_NAME, nameLine->text().toStdString());
-
 
     try{
         handler.Get().Send(nameQueryPacket);
