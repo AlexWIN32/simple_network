@@ -8,7 +8,6 @@
 #include <thread>
 #include <iostream>
 #include <getopt.h>
-#include <Logger.h>
 
 static void usage()
 {
@@ -78,6 +77,7 @@ int main(int argc, char* argv[])
         sslConn->Connect(host, port, ClientContext);
     }else{
         Network::SimpleTcpClientConnection *tcpConnection = new Network::SimpleTcpClientConnection();
+        tcpConnection->SetNonblockingState(false);
         conn = tcpConnection;
         tcpConnection->Connect(host, port);
     }

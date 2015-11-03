@@ -26,7 +26,7 @@ private:
     };
     Poll poll;
     typedef std::map<ConnectionData, ClientSessionManager*> ConnectionsMapping;
-    ConnectionsMapping connections;
+    ConnectionsMapping connections, newConnections;
     typedef std::map<ClientConnectionId, ClientConnection*> ConnectionsIdsMapping;
     ConnectionsIdsMapping connectionIds;
     ClientConnectionId connectionsCounter;

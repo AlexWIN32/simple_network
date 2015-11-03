@@ -405,7 +405,7 @@ void SSLClientConnection::Connect(const std::string &Host, int16_t Port, SSLCont
 {
     const SSLContext *context = (*SSLContextStorage::GetInstance())[ContextKey];
 
-    SocketHandle socket = SocketLevel::create_tcp_client_socket(Host, Port);
+    SocketHandle socket = SocketLevel::create_tcp_client_socket(Host, Port, false);
 
     SSL *ssl = SSL_new(*context);
     SSL_set_fd(ssl, socket);

@@ -1,5 +1,6 @@
 #include <Client.h>
 #include <Logger.h>
+#include <SocketLevel.h>
 
 static Logging::Logger logger("Client");
 
@@ -18,15 +19,15 @@ ClientConnectionId Client::AddConnection(ClientConnection *NewConnection, Client
 
     const Connection *conn = NewConnection->GetHandle();
 
-    poll.Add(*conn, Poll::IN);
-
-    try{
-        logger << Logging::DEBUG << "starting new session for connection " << conn->GetHandle();
-        Manager->OnSesstionStart(conn);
-        logger << Logging::DEBUG << "new session started for connection " << conn->GetHandle();
-    }catch(const Exception &ex){
-        NewConnection->Close();
-        throw ex;
+    if(!NewConnection->IsNonblocking()){
+        try{
+            logger << Logging::DEBUG << "starting new session for connection " << conn->GetHandle();
+            Manager->OnSesstionStart(conn);
+            logger << Logging::DEBUG << "new session started for connection " << conn->GetHandle();
+        }catch(const Exception &ex){
+            NewConnection->Close();
+            throw ex;
+        }
     }
 
     connectionsCounter++;
@@ -35,8 +36,15 @@ ClientConnectionId Client::AddConnection(ClientConnection *NewConnection, Client
     connData.connection = NewConnection;
     connData.id = connectionsCounter;
 
-    connections.insert(std::make_pair(connData, Manager));
     connectionIds.insert(std::make_pair(connectionsCounter, NewConnection));
+
+    if(!NewConnection->IsNonblocking()){
+        connections.insert(std::make_pair(connData, Manager));
+        poll.Add(*conn, Poll::IN);
+    }else{
+        newConnections.insert(std::make_pair(connData, Manager));
+        poll.Add(*conn, Poll::OUT);
+    }
 
     return connectionsCounter;
 }
@@ -56,7 +64,7 @@ void Client::Run() throw (Exception)
             ClientSessionManager *manager = it->second;
 
             if(!poll.Check(*conn, Poll::IN)){
-                ++it;
+               ++it;
                continue;
             }
 
@@ -75,6 +83,7 @@ void Client::Run() throw (Exception)
                 }catch(const Exception &ex){
                     logger << Logging::ERROR << ex.msg;
 
+                    conn->Close();
                     poll.Remove(*conn);
                     delete conn;
                     connectionIds.erase(it->first.id);
@@ -104,6 +113,7 @@ void Client::Run() throw (Exception)
 
                 logger << Logging::ERROR << ex.msg;
 
+                conn->Close();
                 poll.Remove(*conn);
                 delete conn;
                 connectionIds.erase(it->first.id);
@@ -115,6 +125,42 @@ void Client::Run() throw (Exception)
             }
 
             ++it;
+        }
+
+        for(it = newConnections.begin(); it != newConnections.end(); ){
+            const Connection *conn = it->first.connection->GetHandle();
+            ClientSessionManager *manager = it->second;
+
+            if(!poll.Check(*conn, Poll::OUT)){
+                ++it;
+               continue;
+            }
+
+            bool newConnection = false;
+            try{
+                logger << Logging::DEBUG << "connection " << conn->GetHandle() << " establishing";
+                manager->OnSesstionStart(conn);
+                logger << Logging::DEBUG << "connection " << conn->GetHandle() << " established";
+
+                connections.insert(*it);
+
+                poll.Remove(*conn, Poll::OUT);
+                poll.Add(*conn, Poll::IN);
+
+                newConnection = true;
+            }catch(const Exception &ex){
+                logger << Logging::ERROR << ex.msg;
+
+                conn->Write(CommonPackets::Error(ACTION_ERROR, ex.msg));
+            }
+
+            if(!newConnection){
+                conn->Close();
+                poll.Remove(*conn);
+                delete conn;
+            }
+
+            newConnections.erase(it);
         }
     }
 }

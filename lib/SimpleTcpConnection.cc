@@ -55,7 +55,7 @@ Connection* SimpleTcpServerConnection::Accept() const throw (Exception)
 void SimpleTcpClientConnection::Connect(const std::string &Host, int16_t Port) throw (Exception)
 {
     SimpleTcpConnection *tcpConnection = new SimpleTcpConnection();  
-    tcpConnection->Init(SocketLevel::create_tcp_client_socket(Host, Port));
+    tcpConnection->Init(SocketLevel::create_tcp_client_socket(Host, Port, isNonblocking));
     handle = tcpConnection;
 }
 

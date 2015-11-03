@@ -21,7 +21,7 @@ Network::SocketHandle create_tcp_server_socket(int16_t port, int32_t qeue_len) t
 
 Network::SocketHandle accept_from_tcp_server_socket(Network::SocketHandle socket) throw (Exception);
 
-Network::SocketHandle create_tcp_client_socket(const std::string &hostname, int16_t port) throw (Exception);
+Network::SocketHandle create_tcp_client_socket(const std::string &hostname, int16_t port, bool NonBlocking) throw (Exception);
 
 int32_t poll_socket(struct pollfd * fds, int32_t nfds, int32_t timeout) throw (Exception);
 

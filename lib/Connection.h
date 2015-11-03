@@ -45,8 +45,11 @@ class ClientConnection
 {
 protected:
     Connection *handle;
-    ClientConnection() : handle(NULL) {}
+    bool isNonblocking;
+    ClientConnection() : handle(NULL), isNonblocking(false) {}
 public:
+    bool IsNonblocking() const {return isNonblocking;}
+    void SetNonblockingState( bool IsNonblocing) { isNonblocking = IsNonblocing;}
     virtual ~ClientConnection() {delete handle;}
     const Connection *GetHandle() const {return handle;}  
     void Close(){handle->Close();}

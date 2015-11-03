@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <cerrno>
 #include <cstring>
 #include <string>
@@ -16,7 +17,6 @@ namespace SocketLevel
 
 void close_socket(Network::SocketHandle socket)
 {
-    //close(socket);
     shutdown(socket, SHUT_RDWR);
 }
 
@@ -26,17 +26,23 @@ int32_t write_data(Network::SocketHandle socket, const void * buff, size_t buff_
 
     if(res < 0)
         throw SocketException(std::string("write failed: ") + strerror(errno));
-    
+
     return res;
 }
 
 int32_t read_data(Network::SocketHandle socket, void * buff, size_t buff_size) throw (Exception)
 {
-    int32_t res = recv(socket, buff, buff_size, 0);
+    int32_t res;
+    while(true){
+        res = recv(socket, buff, buff_size, 0);
+        if(res < 0){
+            if(errno == EAGAIN)
+                continue;
 
-    if(res < 0)
-        throw SocketException(std::string("read failed: ") + strerror(errno));
-
+            throw SocketException(std::string("read failed: ") + strerror(errno));
+        }
+        break;
+    }
     return res;
 }
 
@@ -93,7 +99,7 @@ Network::SocketHandle accept_from_tcp_server_socket(Network::SocketHandle socket
     return new_sd;
 }
 
-Network::SocketHandle create_tcp_client_socket(const std::string &hostname, int16_t port) throw (Exception)
+Network::SocketHandle create_tcp_client_socket(const std::string &hostname, int16_t port, bool NonBlocking) throw (Exception)
 {
     addrinfo hints;        
     memset(&hints, 0, sizeof(hints));
@@ -115,8 +121,16 @@ Network::SocketHandle create_tcp_client_socket(const std::string &hostname, int1
     servaddr.sin_addr = (reinterpret_cast<sockaddr_in*>(res->ai_addr))->sin_addr;
     servaddr.sin_port = htons(port);            
     
-    if(connect(sock, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+    if(NonBlocking)
+        fcntl(sock, F_SETFL, O_NONBLOCK);
+
+    int retVal = connect(sock, (struct sockaddr *)&servaddr, sizeof(servaddr));
+    if(retVal < 0){
+
+        if(NonBlocking && errno == EINPROGRESS)
+            return sock;
         throw SocketException(std::string("cant conect: ") + strerror(errno));
+    }
   
     return sock;
 }

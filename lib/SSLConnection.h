@@ -141,6 +141,8 @@ public:
 
 class SSLClientConnection : public ClientConnection
 {
+private:
+    void SetNonblockingState( bool IsNonblocing) { ClientConnection::SetNonblockingState(IsNonblocing);}
 public:
     SSLClientConnection(){}
     virtual ~SSLClientConnection(){}
