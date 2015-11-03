@@ -8,6 +8,7 @@
 #include <thread>
 #include <iostream>
 #include <getopt.h>
+#include <Logger.h>
 
 static void usage()
 {

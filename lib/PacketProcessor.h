@@ -2,8 +2,6 @@
 #include <Connection.h>
 #include <Logger.h>
 
-static Logging::Logger logger2("Packet");
-
 namespace Network
 {
 
@@ -25,26 +23,18 @@ public:
 
         ActionId action = static_cast<ActionId>(actionVal);
 
-        //logger2 << Logging::DEBUG << "action " << action;
-
         Packet newPacket(action);
 
         int8_t varsLen;
         ReadFunc(Socket, &varsLen, sizeof(int8_t));
 
-        //logger2 << Logging::DEBUG << "varsLen " << varsLen;
-
         for(int8_t v = 0; v < varsLen; v++){
             VariableId varId;
             ReadFunc(Socket, &varId, sizeof(VariableId));
 
-            //logger2 << Logging::DEBUG << "varId " << varId;
-
             int32_t varTypeVal;
             ReadFunc(Socket, &varTypeVal, sizeof(int32_t));
             Network::PacketVariableType varType = EnumParser<Network::PacketVariableType>::FromInt(varTypeVal);
-
-            //logger2 << Logging::DEBUG << "varTypeVal " << varTypeVal;
 
             int32_t dataLen;
             ReadFunc(Socket, &dataLen, sizeof(int32_t));
@@ -53,12 +43,8 @@ public:
                                 "action" + NumericParser<ActionId>::ToString(action) + " "
                                 "variable " + IntParser::ToString(varTypeVal));
 
-            //logger2 << Logging::DEBUG << "dataLen " << dataLen;
-
             std::vector<char> data(dataLen);
             ReadFunc(Socket, &data[0], dataLen); //AAA vector addr
-
-            //logger2 << Logging::DEBUG << "data " << data.size();
 
             Packet::Variable newVar;
             newVar.Init(varType, data);
